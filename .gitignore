@@ -1,3 +1,11 @@
+# Data files
+*.zip
+*.csv
+*.json
+
+# Emacs generated files
+*~
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
