@@ -1,0 +1,47 @@
+# torch
+import torch
+from torch.utils.data import Dataset
+
+def identity(x):
+    return x
+
+class FeedbackDataset(Dataset):
+    """
+    Class for transforming feedback corpuses of text into labels
+    """
+    
+    def __init__(self, df, text_list, type_labels, file_mode=True, word_pp = identity):
+        """
+        df: Pandas DataFrame containing proper label data
+        text_list: Either a list of paths to text or a list of tuples with ids and text
+        type_labels: Dictionary which transforms discourse type into integers. Must contain a 'None' entry
+        file_mode: Boolean indicating whether you want text list to contain paths or actual strings of text
+        word_pp: Processing to do on words.
+        """
+        self.df = df
+        self.groups = df.groupby('id').groups
+        self.text_list = text_list
+        self.type_labels = type_labels
+        self.file_mode = file_mode
+
+    def __len__(self):
+        return len(self.text_list)
+
+    def __getitem__(self, idx):
+        if self.file_mode:
+            id = self.text_list[idx].split('/')[-1].replace('.txt', '')
+            data = open(self.text_list[idx]).read()
+        else:
+            id = self.text_list[idx][0]
+            data = self.text_list[idx][1]
+        data = data.split()
+
+        # Get word-level labels
+        doc = self.df[self.groups[id]]
+        labels = torch.full(len(data), type_labels['None'])
+        for section in doc:
+            indices = [int(i) for i in section['predictionstring'].split()]
+            labels[indices] = type_labels[section['discourse_type']]
+
+        data = word_pp(data)
+        return data, labels
